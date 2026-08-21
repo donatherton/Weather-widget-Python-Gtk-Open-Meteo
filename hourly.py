@@ -3,6 +3,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GdkPixbuf
 from datetime import datetime
 import os
+import utils
 
 def hourly_forecast(self, pos):
     """ Opens sub-window with 48h forecast """
@@ -59,19 +60,19 @@ def hourly_forecast(self, pos):
     for i in range(0, 48):
       ts = fc[i]['dt'] #+ self.Json['timezone_offset']
       temp = fc[i]['temp']
-      temp_colour = self.temp_colour(temp)  # Colour coded text
+      temp_colour = utils.temp_colour(temp)  # Colour coded text
       if self.prefs_values['temp_unit'] == 'F':
         temp = (temp * 1.8) + 32
       symbol = fc[i]['weather'][0]['icon']
       cond = fc[i]['weather'][0]['description']
       wnd_spd = fc[i]['wind_speed']
-      wnd_colour = self.wind_colour(wnd_spd)
-      wnd_spd = round(self.wnd_spd_unit(wnd_spd))
+      wnd_colour = utils.wind_colour(wnd_spd)
+      wnd_spd = round(utils.wnd_spd_unit(self, wnd_spd))
       wnd_dir = fc[i]['wind_deg']
       try:
         gust = fc[i]['wind_gust']
-        gust_colour = self.wind_colour(gust)
-        gust = round(self.wnd_spd_unit(gust))
+        gust_colour = utils.wind_colour(gust)
+        gust = round(utils.wnd_spd_unit(self, gust))
       except KeyError:
         gust = 0
         gust_colour = ''
@@ -98,9 +99,9 @@ def hourly_forecast(self, pos):
       d = t.date().strftime('%a')
       t = t.time().strftime('%H')
 
-      wnd_dir = self.get_wnd_dir(wnd_dir)
+      wnd_dir = utils.get_wnd_dir(wnd_dir)
 
-      dn = self.day_night(sunrise, sunset, ts)
+      dn = utils.day_night(sunrise, sunset, ts)
 
       day_label = Gtk.Label()
       grid.attach(day_label, 0, i + 1, 1, 1)
@@ -201,7 +202,7 @@ def hourly_forecast(self, pos):
       else:
         context = cloud_label.get_style_context()
         context.add_class('day')
-        cloud_bg = self.cloud_colour(cloud)
+        cloud_bg = utils.cloud_colour(cloud)
         cloud_label.set_markup('<span background=\"' + cloud_bg + '\">' + str(cloud) + '%</span>')
 
       pres = round(float(pres))

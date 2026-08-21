@@ -5,6 +5,7 @@ import urllib.request
 import json
 from datetime import datetime
 import os
+import utils
 
 # @staticmethod
 # def get_wnd_dir(wnd_dir):
@@ -84,7 +85,7 @@ def five_days(self, pos):
       d = t.strftime('%a')
       t = t.time().strftime('%H')
 
-      dn = self.day_night_5day(sunrise, sunset, t)
+      dn = utils.day_night_5day(sunrise, sunset, t)
 
       day_label = Gtk.Label()
       grid.attach(day_label, 0, i + 1, 1, 1)
@@ -98,7 +99,7 @@ def five_days(self, pos):
       day_label.set_markup('<b>' + d + ' ' + t + 'h</b>')
 
       temp = forecast['list'][i]['main']['temp'] - 273.15
-      temp_colour = self.temp_colour(temp)  # Colour coded text
+      temp_colour = utils.temp_colour(temp)  # Colour coded text
       if self.prefs_values['temp_unit'] == 'F':
         temp = (temp * 1.8) + 32
       temp = round(temp, 1)
@@ -162,13 +163,13 @@ def five_days(self, pos):
         precipitation.set_text(str(prec) + 'mm')
 
       wnd_spd = forecast['list'][i]['wind']['speed']
-      wnd_colour = self.wind_colour(wnd_spd)
-      wnd_spd = round(self.wnd_spd_unit(wnd_spd))
+      wnd_colour = utils.wind_colour(wnd_spd)
+      wnd_spd = round(utils.wnd_spd_unit(self, wnd_spd))
       wnd_spd_label = Gtk.Label()
       try:
         wnd_gust = forecast['list'][i]['wind']['gust']
-        gust_colour = self.wind_colour(wnd_gust)
-        wnd_gust = '/' + str(round(self.wnd_spd_unit(wnd_gust)))
+        gust_colour = utils.wind_colour(wnd_gust)
+        wnd_gust = '/' + str(round(utils.wnd_spd_unit(self, wnd_gust)))
       except KeyError:
         gust_colour = '#2E423B'
         wnd_gust = ''
@@ -183,7 +184,7 @@ def five_days(self, pos):
       wnd_spd_label.set_markup('<span foreground=\"' + wnd_colour + '\">' + str(
         wnd_spd) + '</span><span foreground=\"' + gust_colour + '\">' + wnd_gust + self.prefs_values['speed_unit'] + '</span>')
 
-      wnd_dir = self.get_wnd_dir(forecast['list'][i]['wind']['deg'])
+      wnd_dir = utils.get_wnd_dir(forecast['list'][i]['wind']['deg'])
       wnd_dir_label = Gtk.Label()
       grid.attach(wnd_dir_label, 6, i + 1, 1, 1)
       if dn == '-n':
@@ -198,7 +199,7 @@ def five_days(self, pos):
       cloud = forecast['list'][i]['clouds']['all']
       cloud_label = Gtk.Label()
       grid.attach(cloud_label, 7, i + 1, 1, 1)
-      cloud_bg = self.cloud_colour(cloud)
+      cloud_bg = utils.cloud_colour(cloud)
       if dn == '-n':
         context = cloud_label.get_style_context()
         context.add_class('night')

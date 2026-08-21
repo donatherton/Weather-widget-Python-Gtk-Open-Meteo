@@ -4,6 +4,7 @@ from gi.repository import Gtk, Gdk
 import urllib.request
 import os
 import sys
+import json
 
 def prefs(self, pos):
     """ Saves and stores preferences """
