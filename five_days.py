@@ -164,12 +164,12 @@ def five_days(self, pos):
 
       wnd_spd = forecast['list'][i]['wind']['speed']
       wnd_colour = utils.wind_colour(wnd_spd)
-      wnd_spd = round(utils.wnd_spd_unit(self, wnd_spd))
+      wnd_spd = round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], wnd_spd))
       wnd_spd_label = Gtk.Label()
       try:
         wnd_gust = forecast['list'][i]['wind']['gust']
         gust_colour = utils.wind_colour(wnd_gust)
-        wnd_gust = '/' + str(round(utils.wnd_spd_unit(self, wnd_gust)))
+        wnd_gust = '/' + str(round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], wnd_gust)))
       except KeyError:
         gust_colour = '#2E423B'
         wnd_gust = ''

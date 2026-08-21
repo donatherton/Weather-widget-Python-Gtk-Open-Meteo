@@ -59,7 +59,7 @@ class Win(Gtk.Window):
       print('API key required')
       self.prefs_values = default_prefs
       # Bring up prefs dialog
-      prefs.prefs([250, 10])
+      prefs.prefs(self, [250, 10])
 
     # CSS
     css = bytes('window {font-size: ' + str(self.prefs_values['font_size']) + 'px;}', 'UTF-8')
@@ -266,10 +266,10 @@ class Win(Gtk.Window):
     cond = cc['weather'][0]['description']
     icon = cc['weather'][0]['icon']
     wnd_spd = cc['wind_speed']
-    wnd_spd = str(round(utils.wnd_spd_unit(self, wnd_spd)))
+    wnd_spd = str(round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], wnd_spd)))
     try:
       gust = cc['wind_gust']
-      gust = '/' + str(round(utils.wnd_spd_unit(self, gust)))
+      gust = '/' + str(round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], gust)))
     except KeyError:
       gust = ''
     wnd_dir = cc['wind_deg']
@@ -401,10 +401,10 @@ class Win(Gtk.Window):
       icon.set_halign(Gtk.Align.START)
 
       wnd_spd = fc[i]['wind_speed']
-      wnd_spd = str(round(utils.wnd_spd_unit(self, wnd_spd)))
+      wnd_spd = str(round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], wnd_spd)))
       try:
         gust = fc[i]['wind_gust']
-        gust = str(round(utils.wnd_spd_unit(self, gust)))
+        gust = str(round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], gust)))
         gust = '/' + gust
       except KeyError:
         gust = ''

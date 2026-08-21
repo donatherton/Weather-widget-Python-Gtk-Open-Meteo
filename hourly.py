@@ -67,12 +67,12 @@ def hourly_forecast(self, pos):
       cond = fc[i]['weather'][0]['description']
       wnd_spd = fc[i]['wind_speed']
       wnd_colour = utils.wind_colour(wnd_spd)
-      wnd_spd = round(utils.wnd_spd_unit(self, wnd_spd))
+      wnd_spd = round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], wnd_spd))
       wnd_dir = fc[i]['wind_deg']
       try:
         gust = fc[i]['wind_gust']
         gust_colour = utils.wind_colour(gust)
-        gust = round(utils.wnd_spd_unit(self, gust))
+        gust = round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], gust))
       except KeyError:
         gust = 0
         gust_colour = ''
