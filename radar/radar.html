@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+    <head>
+        <title>RainViewer</title>
+
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <link rel="stylesheet" href="leaflet.css"/>
+        <script src="leaflet.js"></script>
+        <style type="text/css">
+            body {
+                font-size: 80%;
+                text-align: center;
+                font-family: sans-serif;
+                display: flex;
+                justify-content: center;
+            }
+            #timestamp {
+                margin: 1em;
+            }
+            #mapid {
+                position: absolute;
+                top: 0;
+                left: 0; bottom: 0; right: 0;
+            }
+            #controls {
+                position: absolute;
+                top: 10px;
+                z-index: 1000;
+                display: inline-block;
+                background-color: white;
+                padding: 10px;
+                border: 1px solid #fff;
+                border-radius: 5px;
+                box-shadow: 3px 3px 3px #888
+            }
+            .back_button, .button {
+                background-color: #555;
+                color: #fff;
+                border: 1px solid #222;
+                border-radius: 5px;
+                box-shadow: gray 2px 2px 2px;
+                padding: 10px;
+                margin: 5px;
+                cursor: pointer;
+            }
+            .button:active {
+                box-shadow: none;
+            }
+            #play {
+               width: 3rem;
+            }
+            input[type="radio"] {
+                width: 1em;
+                height: 1em;
+                margin: 5px;
+            }
+            #time {
+                margin: 5px;
+                font-weight: bold;
+                font-size: large;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="controls">
+            <!-- <label><input type="radio" name="radarOrSat" id="radar" checked="checked">Radar</label> -->
+            <!-- <label><input type="radio" name="radarOrSat" id="satellite">Sat</label> -->
+
+            <input type="button" class="button" id="prevFrame" value="<" />
+            <input type="button" class="button" id ="play" value="&#9654;" />
+            <input type="button" class="button" id="nextFrame" value=">" />
+            <div id="time"></div>
+        </div>
+        <div id="mapid"></div>
+
+        <script>
+            'use strict';
+
+            function Radar() {
+                const vars = {};
+                var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+                    vars[key] = value;
+                });
+                const { lat, lon } = vars;
+                let data = {};
+                let radarOrSat = 'radar';
+                const radarLayer = [];
+                const satLayer = [];
+                let mapLayer;// Will refer to either radarLayer or satLayer
+                let currentFrame;
+                let ts;
+                let frame;
+                let colors;
+                let smooth;
+                let snow;
+                let animation = 0;
+                let timeoutIds = [];
+                const playBtn = document.getElementById('play');
+
+                //document.getElementById('radar').addEventListener('click', e => setRadarOrSat(e));
+                //document.getElementById('satellite').addEventListener('click', e => setRadarOrSat(e));
+                document.getElementById('prevFrame').addEventListener('click', e => nextButton(e));
+                document.getElementById('nextFrame').addEventListener('click', e => nextButton(e));
+                playBtn.addEventListener('click', playStop);
+
+                const map = L.map('mapid', { maxZoom: 7, zoomControl: false}).setView([lat, lon], 7);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: 'Map data &copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors | Radar data &copy; <a href="https://rainviewer.com">RainViewer</a>'
+                }).addTo(map);
+                const mark = new L.CircleMarker([lat, lon]).addTo(map);
+                L.control.zoom({
+                    position: 'bottomleft'
+                }).addTo(map);
+
+                callApi();
+
+                function setRadarOrSat(e) {
+                    radarOrSat = e.target.id;
+                    createRadarLayer();
+                    animation = 0;
+                }
+
+                function nextButton(e) {
+                    let next;
+                    e.target.id === 'nextFrame' ? next = 1 : next = -1;
+                    changeFrame(next);
+                }
+                    
+                function changeFrame(next) {
+                    currentFrame += next;
+                    if (currentFrame > frame.length-1) currentFrame -= 1;
+                    if (currentFrame < 0) currentFrame += 1;
+                    renderLayer(currentFrame);
+                    animation = 0;
+                }
+
+                function playStop() {
+                    if (animation) {
+                        clearTimeout(animation);
+                        animation = 0;
+                        document.getElementById('play').value = '\u25B6';
+                    }
+                    else {
+                        if (currentFrame >= mapLayer.length - 1) {
+                            currentFrame = 0;
+                            for (let i = mapLayer.length - 1; i >= 0; i--) {
+                                renderLayer(i);
+                            }
+                        }
+                        for (let i = currentFrame; i < mapLayer.length; i++) {
+                        mapLayer[i].addTo(map).setOpacity(0);
+                        }
+                        animation = 1;
+                        playAnimation();
+                    }
+                }
+
+                function playAnimation() { 
+                    if (animation && currentFrame < mapLayer.length) {
+                        playBtn.value = '\u275a\u275a';
+                        mapLayer[currentFrame].setOpacity(0.7);
+                        displayTime(frame[currentFrame].time);
+                        if (mapLayer[currentFrame - 1]) map.removeLayer(mapLayer[currentFrame - 1]);
+                        currentFrame += 1;
+                        animation = setTimeout(() => playAnimation(), 1000);
+                        // Detect anination end
+                        if (currentFrame === mapLayer.length) {
+                            animation = 0;
+                            playBtn.value = '\u25B6';
+                        }
+                    }
+                }
+
+                function displayTime(t) {
+                    ts = new Date(t * 1000);
+                        ts = `${ts.getHours().toString().padStart(2, '0')}:${ts.getMinutes().toString().padStart(2, '0')}`
+                        document.getElementById('time').innerHTML = `Frame time: ${ts}`;
+                }
+
+                function createRadarLayer() {
+                    if (radarOrSat === 'radar') {
+                        mapLayer = radarLayer;
+                        frame = data.radar.past;
+                        colors = 8;
+                        smooth = 1;
+                        snow = 1;
+                        currentFrame = frame.length - 1;
+                    }
+                    else {
+                        mapLayer = satLayer;
+                        frame = data.satellite.infrared;
+                        colors = 0;
+                        smooth = 0;
+                        snow = 0;
+                        currentFrame = frame.length - 1;
+                    }
+                    renderLayer(currentFrame);
+                }
+
+                function renderLayer(newFrame) { 
+                    radarLayer.forEach(layer => map.removeLayer(layer));
+                    satLayer.forEach(layer => map.removeLayer(layer));
+                    if (frame[newFrame]) {                                              
+                        if (!mapLayer[newFrame]) {
+                            mapLayer[newFrame] = 
+                            new L.TileLayer(`${data.host}${frame[newFrame].path}/256/{z}/{x}/{y}/${colors}/${smooth}_${snow}.png`,
+                                {
+                                    tileSize: 256,
+                                    opacity: 0.6
+                                });
+                        };
+                        map.addLayer(mapLayer[newFrame]);
+                        displayTime(frame[newFrame].time);                
+                    }
+                }
+
+                function callApi() {
+                    //displayLoading();
+                   // const apiRequest = new XMLHttpRequest();
+                   // apiRequest.open("GET", "https://api.rainviewer.com/public/weather-maps.json", true);
+                   // apiRequest.onload = function(e) {
+                   //     data = JSON.parse(apiRequest.response);
+                   //     createRadarLayer();
+                   // };
+                   // apiRequest.send();
+                    fetch(`https://api.rainviewer.com/public/weather-maps.json`)
+                        .then(response => {
+                            //hideLoading();
+                            if (!response.ok) {
+                                throw new Error(`Network response not ok: ${response.statusText}`);
+                            }
+                            return response.json();
+                        })
+                        .then(result => {
+                            data = result;
+                            createRadarLayer();
+                        })
+                    .catch(err => alert(`Error: ${err}`));
+                }
+            }
+            const radar = new Radar();
+        </script>
+    </body>
+</html>
+
+

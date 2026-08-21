@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+    <head>
+        <title>RainViewer</title>
+
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <link rel="stylesheet" href="leaflet.css"/>
+        <script src="leaflet-1.4.js"></script>
+        <style type="text/css">
+body {
+    font-size: 80%;
+    text-align:center;
+}
+        #timestamp {
+            margin: 1em;
+        }
+        #mapid {
+            position: absolute;
+            top: 100px;
+            left: 0; bottom: 0; right: 0;
+        }
+        .button {
+        }
+        .back_button, .button, select {
+            background-color: #555;
+            color: #fff;
+            border: 1px solid #222;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 0;
+            cursor: pointer;
+        }
+        .back_button {
+            float: left;
+        }
+        input[type="radio"] {
+            width: 1.3em;
+            height: 1.3em;
+            margin: 10px;
+        }
+        #time {
+            margin: 5px;
+            font-weight: bold;
+            font-size: large;
+        }
+        </style>
+    </head>
+    <body>
+        <!-- <button class="back_button" onclick="history.back()">Go back</button> -->
+        <div>
+            <label><input type="radio" name="kind" checked="checked" onchange="setKind('radar')">Radar</label>
+            <label><input type="radio" name="kind" onchange="setKind('satellite')">Satellite</label>
+
+            <input type="button" class="button" id="back" onclick="nextFrame( - 1)" value="&lt;" />
+            <!-- <input type="button" class="button" onclick="playStop();" value="Play / Stop" /> -->
+            <input type="button" class="button" id="next" onclick="nextFrame( + 1)" value="&gt;" />
+            <!-- <select id="colors" onchange="setColors(); return;"> -->
+            <!--     <option value="0">Black and White Values</option> -->
+            <!--     <option value="1">Original</option> -->
+            <!--     <option value="2">Universal Blue</option> -->
+            <!--     <option value="3">TITAN</option> -->
+            <!--     <option value="4">The Weather Channel</option> -->
+            <!--     <option value="5">Meteored</option> -->
+            <!--     <option value="6">NEXRAD Level-III</option> -->
+            <!--     <option value="7">RAINBOW @ SELEX-SI</option> -->
+            <!--     <option value="8" selected="selected">Dark Sky</option> -->
+            <!-- </select> -->
+        </div>
+
+        <div id="time">FRAME TIME</div>
+
+        <div id="mapid"></div>
+
+        <script>
+            const vars = {};
+            var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+                vars[key] = value;
+            });
+            const { lat, lon } = vars;
+
+            const map = L.map('mapid', { maxZoom: 10}).setView([lat, lon], 7);
+
+            let data = {};
+            let kind = 'radar';
+            const radarLayer = [];
+            const satLayer = [];
+            let currentFrame;
+            let ts;
+            let frame;
+            let colors;
+            let smooth;
+            let snow;
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attributions: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            const mark = new L.CircleMarker([lat, lon]).addTo(map);
+
+            callApi();
+
+            function setKind(option) {
+                initRadarLayer(data, option)
+            }
+
+            function nextFrame(next) { console.log(frame.length-1, currentFrame)
+                currentFrame = currentFrame + next;
+                if (currentFrame > frame.length-1) currentFrame -= 1;
+                if (currentFrame < 0) currentFrame += 1;
+                renderLayer(currentFrame); console.log(currentFrame)
+            }
+
+            function initRadarLayer(data, radarOrSat) {
+                if (radarOrSat === 'radar') {
+                    frame = data.radar.past;
+                    colors = 8;
+                    smooth = 1;
+                    snow = 1;
+                    currentFrame = frame.length - 1;
+                }
+                else {
+                    frame = data.satellite.infrared;
+                    colors = 0;
+                    smooth = 0;
+                    snow = 0;
+                    currentFrame = frame.length - 1;
+                }
+                renderLayer(currentFrame, 0);
+            }
+
+            function renderLayer(currentFrame) {  console.log(data.host)
+                if (frame[currentFrame]) {
+                    for (let i in radarLayer) {
+                        map.removeLayer(radarLayer[i]);
+                    }
+                    radarLayer[frame[currentFrame].path] = 
+                        new L.TileLayer(`${data.host}${frame[currentFrame].path}/256/{z}/{x}/{y}/${colors}/${smooth}_${snow}.png`,
+                            {
+                                tileSize: 256,
+                                opacity: 0.5
+                            });
+                    map.addLayer(radarLayer[frame[currentFrame].path]);
+                    ts = new Date(frame[currentFrame].time * 1000);
+                    ts = `${ts.getHours().toString().padStart(2, '0')}:${ts.getMinutes().toString().padStart(2, '0')}`
+                    document.getElementById('time').innerHTML = `Frame time: ${ts}`;
+                }
+            }
+
+            function callApi() {
+                var apiRequest = new XMLHttpRequest();
+                apiRequest.open("GET", "https://api.rainviewer.com/public/weather-maps.json", true);
+                apiRequest.onload = function(e) {
+                    // store the API response for re-use purposes in memory
+                    data = JSON.parse(apiRequest.response);
+                    initRadarLayer(data, kind);
+                };
+                apiRequest.send();
+                //displayLoading();
+                //const controller = new AbortController();
+                //setTimeout(() => controller.abort('Network error'), 10000);
+                //fetch(`https://api.rainviewer.com/public/weather-maps.json`,
+                //    { signal: controller.signal })
+                //    .then(response => {
+                //        //hideLoading();
+                //        if (!response.ok) {
+                //            throw new Error(`Network response not ok: ${response.statusText}`);
+                //        }
+                //        return response.json();
+                //    })
+                //    .then(result => {
+                //        data = result;
+                //        initRadarLayer(data, kind);
+                //    })
+                //.catch(err => alert(`Error: ${err}`));
+            }
+
+
+        </script>
+
+
+    </body>
+</html>
+
