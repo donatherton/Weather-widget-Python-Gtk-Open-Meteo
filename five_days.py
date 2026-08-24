@@ -1,24 +1,15 @@
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GdkPixbuf
-import urllib.request
+from urllib import request
 import json
 from datetime import datetime
 import os
 import utils
 
-# @staticmethod
-# def get_wnd_dir(wnd_dir):
-#     dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
-#     ranges = [11, 33, 56, 78, 101, 123, 146, 168, 190, 213, 235, 258, 280, 303, 325, 347]
-#     for i, r in enumerate(ranges):
-#       if wnd_dir <= r:
-#         return dirs[i]
-#     return dirs[-1]
-
-def five_days(self, pos):
+def five_days(win, pos):
     """ Opens sub-window with 5 day forecast """
-    url_forecast = 'http://api.openweathermap.org/data/2.5/forecast?lat=' + self.prefs_values['lat'] + '&lon=' + self.prefs_values['lon'] + '&appid=' + self.prefs_values['appid']
+    url_forecast = 'http://api.openweathermap.org/data/2.5/forecast?lat=' + win.prefs_values['lat'] + '&lon=' + win.prefs_values['lon'] + '&appid=' + win.prefs_values['appid']
 
     # CSS
     screen = Gdk.Screen.get_default()
@@ -43,15 +34,15 @@ def five_days(self, pos):
     Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     # Create window
-    win = Gtk.Window()
-    win.set_title('5 day 3 hour forecast')
-    win.set_default_size(450, 500)
-    win.move(pos[0], pos[1])
+    wnd = Gtk.Window()
+    wnd.set_title('5 day 3 hour forecast')
+    wnd.set_default_size(450, 700)
+    wnd.move(pos[0], pos[1])
 
     container = Gtk.ScrolledWindow()
     # container.set_policy (Gtk.PolicyType.NEVER,Gtk.PolicyType.AUTOMATIC)
 
-    win.add(container)
+    wnd.add(container)
     flowbox = Gtk.VBox()
     flowbox.set_border_width(10)
     container.add(flowbox)
@@ -60,8 +51,11 @@ def five_days(self, pos):
     grid.set_row_spacing(1)
     flowbox.add(grid)
 
-    forecast_url = urllib.request.urlopen(url_forecast)
-    forecast = json.load(forecast_url)
+    try:
+        forecast_url = request.urlopen(url_forecast)
+        forecast = json.load(forecast_url)
+    except Exception as e:
+        print(e)
 
     sunrise = forecast['city']['sunrise']
     sunset = forecast['city']['sunset']
@@ -79,7 +73,7 @@ def five_days(self, pos):
       item_label.set_halign(Gtk.Align.START)
       f = f + 1
 
-    for i in range(0, 40):
+    for i in range(40):
       t = forecast['list'][i]['dt']
       t = datetime.fromtimestamp(t).astimezone()
       d = t.strftime('%a')
@@ -100,7 +94,7 @@ def five_days(self, pos):
 
       temp = forecast['list'][i]['main']['temp'] - 273.15
       temp_colour = utils.temp_colour(temp)  # Colour coded text
-      if self.prefs_values['temp_unit'] == 'F':
+      if win.prefs_values['temp_unit'] == 'F':
         temp = (temp * 1.8) + 32
       temp = round(temp, 1)
       temp_label = Gtk.Label()
@@ -116,7 +110,7 @@ def five_days(self, pos):
       temp_label.set_markup('<b><span foreground=\"' + temp_colour + '\">' + str(temp) + '\N{DEGREE SIGN}' + 'C</span></b>')
 
       symbol = forecast['list'][i]['weather'][0]['icon']
-      weather_icon = self.path + os.sep + 'PNG' + os.sep + symbol + '.png'
+      weather_icon = win.path + os.sep + 'PNG' + os.sep + symbol + '.png'
       weathericon = Gtk.Image.new_from_pixbuf()
       grid.attach(weathericon, 2, i + 1, 1, 1)
       if dn == '-n':
@@ -164,12 +158,12 @@ def five_days(self, pos):
 
       wnd_spd = forecast['list'][i]['wind']['speed']
       wnd_colour = utils.wind_colour(wnd_spd)
-      wnd_spd = round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], wnd_spd))
+      wnd_spd = round(utils.wnd_spd_unit(win.prefs_values['speed_unit'], wnd_spd))
       wnd_spd_label = Gtk.Label()
       try:
         wnd_gust = forecast['list'][i]['wind']['gust']
         gust_colour = utils.wind_colour(wnd_gust)
-        wnd_gust = '/' + str(round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], wnd_gust)))
+        wnd_gust = '/' + str(round(utils.wnd_spd_unit(win.prefs_values['speed_unit'], wnd_gust)))
       except KeyError:
         gust_colour = '#2E423B'
         wnd_gust = ''
@@ -182,7 +176,7 @@ def five_days(self, pos):
         context.add_class('day')
 
       wnd_spd_label.set_markup('<span foreground=\"' + wnd_colour + '\">' + str(
-        wnd_spd) + '</span><span foreground=\"' + gust_colour + '\">' + wnd_gust + self.prefs_values['speed_unit'] + '</span>')
+        wnd_spd) + '</span><span foreground=\"' + gust_colour + '\">' + wnd_gust + win.prefs_values['speed_unit'] + '</span>')
 
       wnd_dir = utils.get_wnd_dir(forecast['list'][i]['wind']['deg'])
       wnd_dir_label = Gtk.Label()
@@ -221,7 +215,6 @@ def five_days(self, pos):
 
       pressure.set_text(str(pres) + 'mb')
 
-    win.connect("destroy", Gtk.main_quit)
-    win.show_all()
+    wnd.connect("destroy", Gtk.main_quit)
+    wnd.show_all()
     Gtk.main()
-

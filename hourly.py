@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 import utils
 
-def hourly_forecast(self, pos):
+def hourly_forecast(win, pos):
     """ Opens sub-window with 48h forecast """
     # CSS
     screen = Gdk.Screen.get_default()
@@ -54,25 +54,25 @@ def hourly_forecast(self, pos):
       item_label.set_markup('<b>' + item + '</b>')
       f = f + 1
 
-    fc = self.Json['hourly']
-    #print(self.Json)
+    fc = win.Json['hourly']
+    #print(win.Json)
 
-    for i in range(0, 48):
-      ts = fc[i]['dt'] #+ self.Json['timezone_offset']
+    for i in range(48):
+      ts = fc[i]['dt'] #+ win.Json['timezone_offset']
       temp = fc[i]['temp']
       temp_colour = utils.temp_colour(temp)  # Colour coded text
-      if self.prefs_values['temp_unit'] == 'F':
+      if win.prefs_values['temp_unit'] == 'F':
         temp = (temp * 1.8) + 32
       symbol = fc[i]['weather'][0]['icon']
       cond = fc[i]['weather'][0]['description']
       wnd_spd = fc[i]['wind_speed']
       wnd_colour = utils.wind_colour(wnd_spd)
-      wnd_spd = round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], wnd_spd))
+      wnd_spd = round(utils.wnd_spd_unit(win.prefs_values['speed_unit'], wnd_spd))
       wnd_dir = fc[i]['wind_deg']
       try:
         gust = fc[i]['wind_gust']
         gust_colour = utils.wind_colour(gust)
-        gust = round(utils.wnd_spd_unit(self.prefs_values['speed_unit'], gust))
+        gust = round(utils.wnd_spd_unit(win.prefs_values['speed_unit'], gust))
       except KeyError:
         gust = 0
         gust_colour = ''
@@ -92,8 +92,8 @@ def hourly_forecast(self, pos):
 #        pop = '0%'
       cloud = fc[i]['clouds']
 
-      sunrise = self.Json['current']['sunrise']
-      sunset = self.Json['current']['sunset']
+      sunrise = win.Json['current']['sunrise']
+      sunset = win.Json['current']['sunset']
 
       t = datetime.fromtimestamp(ts).astimezone()
       d = t.date().strftime('%a')
@@ -127,7 +127,7 @@ def hourly_forecast(self, pos):
 
       temp_label.set_markup('<b><span foreground=\"' + temp_colour + '\">' + str(temp) + '\N{DEGREE SIGN}' + 'C</span></b>')
 
-      weather_icon = self.path + os.sep + 'PNG' + os.sep + symbol + '.png'
+      weather_icon = win.path + os.sep + 'PNG' + os.sep + symbol + '.png'
       weathericon = Gtk.Image.new_from_pixbuf()
       grid.attach(weathericon, 2, i + 1, 1, 1)
 
@@ -179,7 +179,7 @@ def hourly_forecast(self, pos):
 
       wnd_spd_label.set_markup(
         '<span foreground=\"' + wnd_colour + '\">' + str(wnd_spd) + '/</span><span foreground=\"' + gust_colour + '\">' + str(
-          gust) + self.prefs_values['speed_unit'] + '</span>')
+          gust) + win.prefs_values['speed_unit'] + '</span>')
 
       wnd_dir_label = Gtk.Label()
       grid.attach(wnd_dir_label, 6, i + 1, 1, 1)
@@ -222,42 +222,3 @@ def hourly_forecast(self, pos):
     wnd.connect("destroy", Gtk.main_quit)
     wnd.show_all()
     Gtk.main()
-
-@staticmethod
-def temp_colour(temp):
-    """ Selects font colour based on temperature """
-    temp_colours = ['#00ffff', '#3399ff', '#3366cc', '#3319FF', '#ff3300', '#ff0000', '#993300']
-    temp_ranges = [0, 5, 10, 15, 20, 25]
-    for i in range(len(temp_ranges)):
-        if temp < temp_ranges[i]:
-            return temp_colours[i]
-    return temp_colours[-1]
-
-@staticmethod
-def cloud_colour(cloud):
-    """ Selects BG colour based on amount of cloud """
-    cloud_colours = ['#eeeeee', '#dddddd', '#cccccc', '#bbbbbb', '#aaaaaa']
-    cloud_ranges = [0, 20, 40, 60, 80]
-    for i in range(len(cloud_ranges)):
-        if cloud < cloud_ranges[i]:
-            return cloud_colours[i]
-    return cloud_colours[-1]
-
-@staticmethod
-def wind_colour(wnd_spd):
-    wnd_colours = ['#2E423B', '#CE5C00', '#CE1600', '#CC0000', '#A40075']
-    wnd_ranges = [8, 15, 20, 25]
-    for i in range(len(wnd_ranges)):
-        if wnd_spd < wnd_ranges[i]:
-            return wnd_colours[i]
-    return wnd_colours[-1]
-
-@staticmethod
-def day_night(sr, ss, h):
-    """ Selects BG colour to show day/night """
-    if (int(sr) <= int(h) and int(h) <= int(ss)) or (int(sr) <= int(h - 86400) and int(h - 86400) <= int(ss)) or (
-        int(sr) <= int(h - 172800) and int(h - 172800) <= int(ss)):
-      dn = '-d'
-    else:
-      dn = '-n'
-    return dn

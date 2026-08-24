@@ -47,8 +47,11 @@
       const appid = 'ceeff4f655122f1cc6258310c2772973';
 
       const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        { id: 'osm',
-          attribution: 'Map data &copy;  <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' });
+        {
+          id: 'osm',
+          referrerPolicy: 'origin',
+          attribution: 'Map data &copy;  <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
       const google =  L.tileLayer('https://mt0.google.com/vt/lyrs=y&hl=en&x={x}&s=&y={y}&z={z}',
         { id: 'streets', maxZoom: 21 });
       const owmRain = L.tileLayer(`https://tile.openweathermap.org/map/rain_cls/{z}/{x}/{y}.png?appid=${appid}`,

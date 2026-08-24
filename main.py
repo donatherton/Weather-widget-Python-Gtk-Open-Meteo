@@ -19,11 +19,11 @@
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GdkPixbuf, GLib, Gio, WebKit2
-import urllib.request
+from urllib import request
 from datetime import datetime
 import json
 import os
-import sys
+from sys import exit
 import hourly
 import five_days
 import prefs
@@ -231,20 +231,15 @@ class Win(Gtk.Window):
 
 
   def the_loop(self):
-    """ The main display, refreshes every timeout minutes """
+    """ The main display, refreshes every <timeout> minutes"""
     try:
       # The data source
       url = 'https://api.openweathermap.org/data/3.0/onecall?lat=' + self.prefs_values['lat'] + '&lon=' + self.prefs_values['lon'] + '&exclude=minutely,alerts&units=metric&appid=' + self.prefs_values['appid']
-      data = urllib.request.urlopen(url)
-    except:
-#      error_box = Gtk.Label()
-#      self.main_container.pack_start(error_box, True, True, 0)
-#      error_box.set_markup('<span size=\"large\"><b>Error with connection</b></span>')
+      data = request.urlopen(url)
+    except Exception as e:
+      print('Error: ', e)
       return True
-#    try:  # Remove previous grid if not just started
     self.grid.destroy()
-#    except:
-#      pass
 
     self.grid = Gtk.Grid()
     self.grid.set_column_homogeneous(True)
@@ -364,7 +359,7 @@ class Win(Gtk.Window):
     # 7 day forecast
     fc = self.Json['daily']
 
-    for i in range(0, 7):
+    for i in range(7):
       vbox = Gtk.VBox()
       self.grid.attach(vbox, i, 1, 1, 1)
 
