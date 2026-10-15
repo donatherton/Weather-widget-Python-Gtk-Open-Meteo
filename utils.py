@@ -1,9 +1,42 @@
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk
-import urllib.request
 import os
 import sys
+
+def weather_icon(code, suffix='d'):
+    """ Map a WMO weather code to an OpenWeatherMap icon file name """
+    icons = {
+        0: '01', 1: '02', 2: '03', 3: '04',
+        45: '50', 48: '50',
+        51: '09', 53: '09', 55: '09',
+        56: '09', 57: '09',
+        61: '10', 63: '10', 65: '10',
+        66: '10', 67: '10',
+        71: '13', 73: '13', 75: '13', 77: '13',
+        80: '09', 81: '10', 82: '10',
+        85: '13', 86: '13',
+        95: '11', 96: '11', 99: '11',
+    }
+    return icons.get(code, '01') + suffix.lstrip('-')
+
+def weather_description(code):
+    """ Text description for a WMO weather code """
+    descriptions = {
+        0: 'Clear sky',
+        1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+        45: 'Fog', 48: 'Depositing rime fog',
+        51: 'Light drizzle', 53: 'Moderate drizzle', 55: 'Dense drizzle',
+        56: 'Light freezing drizzle', 57: 'Dense freezing drizzle',
+        61: 'Slight rain', 63: 'Moderate rain', 65: 'Heavy rain',
+        66: 'Light freezing rain', 67: 'Heavy freezing rain',
+        71: 'Slight snow fall', 73: 'Moderate snow fall', 75: 'Heavy snow fall',
+        77: 'Snow grains',
+        80: 'Slight rain showers', 81: 'Moderate rain showers', 82: 'Violent rain showers',
+        85: 'Slight snow showers', 86: 'Heavy snow showers',
+        95: 'Thunderstorm', 96: 'Thunderstorm with slight hail', 99: 'Thunderstorm with heavy hail',
+    }
+    return descriptions.get(code, 'Unknown')
 
 def wnd_spd_unit(unit, wndspd):
     switcher = {
@@ -63,14 +96,6 @@ def wind_colour(wnd_spd):
             return wnd_colours[i]
     return wnd_colours[-1]
 
-def day_night(sr, ss, h):
-    """ Selects BG colour to show day/night """
-    if (int(sr) <= int(h) and int(h) <= int(ss)) or (int(sr) <= int(h - 86400) and int(h - 86400) <= int(ss)) or (
-            int(sr) <= int(h - 172800) and int(h - 172800) <= int(ss)):
-        dn = '-d'
-    else:
-        dn = '-n'
-    return dn
-
-def day_night_5day(sr, ss, h):
-    return '-d' if sr <= h <= ss else '-n'
+def day_night(sunrise, sunset, time):
+    """ Selects day/night marker based on datetime objects """
+    return '-d' if sunrise <= time <= sunset else '-n'

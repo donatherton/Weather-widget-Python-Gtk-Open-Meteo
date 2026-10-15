@@ -61,7 +61,6 @@ def prefs(win, pos):
         lat1 = win.prefs_values['lat']
         lon1 = win.prefs_values['lon']
 
-      appid_value = appid.get_text()
       temp_button = [r for r in button1.get_group() if r.get_active()]
       speed_button = [r for r in wnd_spd_button1.get_group() if r.get_active()]
       timeout = time_out.get_text()
@@ -69,7 +68,6 @@ def prefs(win, pos):
       font_size = font.get_value_as_int()
 
       with open(win.path + os.sep + 'prefs', 'w') as f:
-        f.write('appid,' + appid_value + '\n')
         f.write('lat,' + lat1 + '\n')
         f.write('lon,' + lon1 + '\n')
         f.write('loc,' + place_name1 + '\n')
@@ -123,14 +121,6 @@ def prefs(win, pos):
     column = Gtk.TreeViewColumn('Add location from search results', renderer_text, text=0)
     treeview.append_column(column)
     grid_box.add(treeview)
-
-    appid_label = Gtk.Label()
-    box.pack_start(appid_label, False, False, 5)
-    appid_label.set_markup('<b>OpenWeatherMap key:</b>')
-    appid = Gtk.Entry()
-    box.pack_start(appid, False, False, 0)
-    appid.set_text(win.prefs_values['appid'])
-    appid_label.set_halign(Gtk.Align.START)
 
     temp_box = Gtk.Box(spacing=6)
     box.pack_start(temp_box, False, False, 5)

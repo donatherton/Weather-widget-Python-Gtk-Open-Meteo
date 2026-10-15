@@ -6,7 +6,7 @@ import os
 import utils
 
 def hourly_forecast(win, pos):
-    """ Opens sub-window with 48h forecast """
+    """ Opens sub-window with 7day forecast """
     # CSS
     screen = Gdk.Screen.get_default()
     provider = Gtk.CssProvider()
@@ -55,56 +55,60 @@ def hourly_forecast(win, pos):
       f = f + 1
 
     fc = win.Json['hourly']
-    #print(win.Json)
+    daily = win.Json['daily']
+    current = win.Json['current']
 
-    for i in range(48):
-      ts = fc[i]['dt'] #+ win.Json['timezone_offset']
-      temp = fc[i]['temp']
+    # Start at the current hour
+    now = current['time'][:13] + ':00'
+    start = 0
+    for j, ts in enumerate(fc['time']):
+      if ts >= now:
+        start = j
+        break
+
+    for n in range(167):
+      i = start + n
+      if i >= len(fc['time']):
+        break
+      row = n + 1
+
+      ts = fc['time'][i]
+      temp = fc['temperature_2m'][i]
       temp_colour = utils.temp_colour(temp)  # Colour coded text
       if win.prefs_values['temp_unit'] == 'F':
         temp = (temp * 1.8) + 32
-      symbol = fc[i]['weather'][0]['icon']
-      cond = fc[i]['weather'][0]['description']
-      wnd_spd = fc[i]['wind_speed']
+      code = fc['weather_code'][i]
+      cond = utils.weather_description(code)
+      wnd_spd = fc['wind_speed_10m'][i]
       wnd_colour = utils.wind_colour(wnd_spd)
       wnd_spd = round(utils.wnd_spd_unit(win.prefs_values['speed_unit'], wnd_spd))
-      wnd_dir = fc[i]['wind_deg']
-      try:
-        gust = fc[i]['wind_gust']
-        gust_colour = utils.wind_colour(gust)
-        gust = round(utils.wnd_spd_unit(win.prefs_values['speed_unit'], gust))
-      except KeyError:
-        gust = 0
-        gust_colour = ''
-      pres = fc[i]['pressure']
-      try:
-        rain = fc[i]['rain']['1h']
-        rain = round(float(rain), 1)
-      except KeyError:
-        rain = 0
-#      try:
-      pop = round(fc[i]['pop']*100)
+      wnd_dir = fc['wind_direction_10m'][i]
+      gust = fc['wind_gusts_10m'][i]
+      gust_colour = utils.wind_colour(gust)
+      gust = round(utils.wnd_spd_unit(win.prefs_values['speed_unit'], gust))
+      pres = fc['surface_pressure'][i]
+      rain = round(float(fc['precipitation'][i]), 1)
+      pop = round(fc['precipitation_probability'][i])
       if pop > 0:
         pop = '<b>' + str(pop) + '%</b>'
       else:
         pop = str(pop) + '%'
-#      except KeyError:
-#        pop = '0%'
-      cloud = fc[i]['clouds']
+      cloud = fc['cloud_cover'][i]
 
-      sunrise = win.Json['current']['sunrise']
-      sunset = win.Json['current']['sunset']
+      dt = datetime.fromisoformat(ts)
+      sunrise = datetime.fromisoformat(daily['sunrise'][i // 24])
+      sunset = datetime.fromisoformat(daily['sunset'][i // 24])
 
-      t = datetime.fromtimestamp(ts).astimezone()
-      d = t.date().strftime('%a')
-      t = t.time().strftime('%H')
+      d = dt.date().strftime('%a')
+      t = dt.time().strftime('%H')
 
       wnd_dir = utils.get_wnd_dir(wnd_dir)
 
-      dn = utils.day_night(sunrise, sunset, ts)
+      dn = utils.day_night(sunrise, sunset, dt)
+      symbol = utils.weather_icon(code, dn)
 
       day_label = Gtk.Label()
-      grid.attach(day_label, 0, i + 1, 1, 1)
+      grid.attach(day_label, 0, row, 1, 1)
 
       if dn == '-n':
         context = day_label.get_style_context()
@@ -116,7 +120,7 @@ def hourly_forecast(win, pos):
 
       temp = round(temp, 1)
       temp_label = Gtk.Label()
-      grid.attach(temp_label, 1, i + 1, 1, 1)
+      grid.attach(temp_label, 1, row, 1, 1)
 
       if dn == '-n':
         context = temp_label.get_style_context()
@@ -129,7 +133,7 @@ def hourly_forecast(win, pos):
 
       weather_icon = win.path + os.sep + 'PNG' + os.sep + symbol + '.png'
       weathericon = Gtk.Image.new_from_pixbuf()
-      grid.attach(weathericon, 2, i + 1, 1, 1)
+      grid.attach(weathericon, 2, row, 1, 1)
 
       if dn == '-n':
         context = weathericon.get_style_context()
@@ -142,7 +146,7 @@ def hourly_forecast(win, pos):
       weathericon.show()
 
       name_label = Gtk.Label()
-      grid.attach(name_label, 3, i + 1, 1, 1)
+      grid.attach(name_label, 3, row, 1, 1)
 
       if dn == '-n':
         context = name_label.get_style_context()
@@ -154,7 +158,7 @@ def hourly_forecast(win, pos):
       name_label.set_line_wrap(True)
 
       precipitation = Gtk.Label()
-      grid.attach(precipitation, 4, i + 1, 1, 1)
+      grid.attach(precipitation, 4, row, 1, 1)
 
       if dn == '-n':
         context = precipitation.get_style_context()
@@ -168,7 +172,7 @@ def hourly_forecast(win, pos):
         precipitation.set_markup(str(rain) + 'mm, ' + pop)
 
       wnd_spd_label = Gtk.Label()
-      grid.attach(wnd_spd_label, 5, i + 1, 1, 1)
+      grid.attach(wnd_spd_label, 5, row, 1, 1)
 
       if dn == '-n':
         context = wnd_spd_label.get_style_context()
@@ -182,7 +186,7 @@ def hourly_forecast(win, pos):
           gust) + win.prefs_values['speed_unit'] + '</span>')
 
       wnd_dir_label = Gtk.Label()
-      grid.attach(wnd_dir_label, 6, i + 1, 1, 1)
+      grid.attach(wnd_dir_label, 6, row, 1, 1)
 
       if dn == '-n':
         context = wnd_dir_label.get_style_context()
@@ -193,7 +197,7 @@ def hourly_forecast(win, pos):
       wnd_dir_label.set_text(str(wnd_dir))
 
       cloud_label = Gtk.Label()
-      grid.attach(cloud_label, 7, i + 1, 1, 1)
+      grid.attach(cloud_label, 7, row, 1, 1)
 
       if dn == '-n':
         context = cloud_label.get_style_context()
@@ -207,7 +211,7 @@ def hourly_forecast(win, pos):
 
       pres = round(float(pres))
       pressure = Gtk.Label()
-      grid.attach(pressure, 8, i + 1, 1, 1)
+      grid.attach(pressure, 8, row, 1, 1)
 
       if dn == '-n':
         context = pressure.get_style_context()
