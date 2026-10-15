@@ -343,7 +343,7 @@ class Win(Gtk.Window):
     wnd_icon = self.path + os.sep + 'bearingicons' + os.sep + wnd_dir + '.png'
     pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(wnd_icon, 60, 60)
     wnd_dir_icon.set_from_pixbuf(pixbuf)
-    wnd_dir_icon.set_tooltip_text(str(wnd_bearing) + 'Wind direction \N{DEGREE SIGN}')
+    wnd_dir_icon.set_tooltip_text('Wind direction ' + str(wnd_bearing) + '\N{DEGREE SIGN}')
 
     pressure.set_text('Pressure: ' + str(round(pres)) + 'mb')
     pressure.set_halign(Gtk.Align.START)
