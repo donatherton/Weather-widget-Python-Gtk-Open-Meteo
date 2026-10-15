@@ -106,7 +106,7 @@ class Win(Gtk.Window):
 
     # Button for maps
     radar_owm = Gtk.LinkButton.new_with_label("Radar")
-    radar_owm.connect("clicked", self.call_radar_owm)
+    radar_owm.connect("clicked", self.call_radar)
     hbox.pack_end(radar_owm, True, True, 0)
     radar_owm.set_tooltip_text('Radar')
 
@@ -128,12 +128,6 @@ class Win(Gtk.Window):
     close_widget.set_label('Quit')
     menu.append(close_widget)
     close_widget.show()
-
-    # Button for rainfall radar
-    radar = Gtk.LinkButton.new_with_label("Ventusky")
-    radar.connect("clicked", self.call_radar)
-    hbox.pack_end(radar, True, True, 0)
-    radar.set_tooltip_text('Maps')
 
     # Right-click menu
     menu = Gtk.Menu()
@@ -176,17 +170,13 @@ class Win(Gtk.Window):
   def call_radar(self, button):
     self.rainfall_radar()
 
-  def call_radar_owm(self, button):
-    self.rainfall_radar_owm()
-
   def set_preferences(self, widget, event):
     # Open prefs dialogue
     if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 1:
       pos = self.get_position()
       prefs.prefs(self, pos)
 
-
-  def rainfall_radar_owm(self):
+  def rainfall_radar(self):
     """ Brings up rainfall radar window """
     # Create window
     rain_win = Gtk.Window()
@@ -197,6 +187,7 @@ class Win(Gtk.Window):
     webview = WebKit2.WebView()
     webview.load_uri('file://' + self.path + os.sep + 'radar/radar.html?lat=' + self.prefs_values['lat'] + '&lon=' + self.prefs_values['lon'])
     viewport.add(webview)
+
     # Add everything and initialize
     container = Gtk.VBox()
     container.pack_start(viewport,True,True,0)
@@ -206,27 +197,9 @@ class Win(Gtk.Window):
     rain_win.show_all()
     Gtk.main()
 
-  def rainfall_radar(self):
-    """ Brings up ventusky window """
-    # Create window
-    rain_owm_win = Gtk.Window()
-    rain_owm_win.set_default_size(1500, 840)
-
-    # Create view for webpage
-    viewport = Gtk.ScrolledWindow()
-    webview = WebKit2.WebView()
-    webview.load_uri('file://' + self.path + os.sep + 'radar/ventusky.html')
-    viewport.add(webview)
     # Add everything and initialize
     container = Gtk.VBox()
     container.pack_start(viewport,True,True,0)
-    rain_owm_win.add(container)
-
-    rain_owm_win.connect("destroy", Gtk.main_quit)
-    rain_owm_win.show_all()
-    Gtk.main()
-
-
 
   def the_loop(self):
     """ The main display, refreshes every <timeout> minutes"""
